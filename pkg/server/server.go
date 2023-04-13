@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	linuxChatAppPb "github.com/hashsequence/Linux-Chat-App/pkg/pb"
+	linuxChatAppPb "github.com/hashsequence/Linux-Chat-App/pkg/pb/LinuxChatAppPb"
 	"crypto/tls"
 	"crypto/x509"
 	"google.golang.org/grpc"
