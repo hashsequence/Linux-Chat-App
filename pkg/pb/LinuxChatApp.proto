@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package linuxChatApp;
+option go_package="/LinuxChatAppPb";
+
+message chatRoomRequest {
+    string userName = 1;
+    string chatRoomName = 2;
+    string chatRoomId = 3;
+}
+
+message chatRoomResponse {
+    string hostUserName = 1;
+    string chatRoomName = 2;
+    string chatRoomId = 3;
+}
+
+message MessageRequest {
+    string chatRoomId = 1;
+    string userName = 2;
+    string message = 3;
+    string timeStamp = 4;
+}
+
+message ChatRow {
+    string userName = 1;
+    string timeStamp = 2;
+    string message = 3;
+}
+message ChatLog {
+    string chatRoomName = 1;
+    string ChatRow = 2;
+}
+
+service LinuxChatAppService {
+    rpc CreateChatRoom(chatRoomRequest) returns (chatRoomResponse) {};
+    rpc JoinChatRoom(chatRoomRequest) returns (chatRoomResponse) {};
+    rpc LeaveChatRoom(chatRoomRequest) returns (chatRoomResponse) {};
+    rpc SendMessage(stream MessageRequest) returns (stream ChatLog) {};
+}
