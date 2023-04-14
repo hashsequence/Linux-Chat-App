@@ -2,7 +2,11 @@ module github.com/hashsequence/Linux-Chat-App
 
 go 1.20
 
-require google.golang.org/grpc v1.54.0
+require (
+	github.com/google/uuid v1.3.0
+	github.com/hashsequence/Linux-Job-Worker v1.0.0
+	google.golang.org/grpc v1.54.0
+)
 
 require (
 	github.com/golang/protobuf v1.5.2 // indirect

@@ -66,3 +66,7 @@ func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) err
 
 	return nil
 }
+
+func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxJobWorkerPb.chatRoomRequest) (*linuxChatAppPb.chatRoomResponse, error) {
+
+}
