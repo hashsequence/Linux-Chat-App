@@ -1,19 +1,19 @@
 package server
 
 import (
-	"fmt"
-	linuxChatAppPb "github.com/hashsequence/Linux-Chat-App/pkg/pb/LinuxChatAppPb"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
+	"io/ioutil"
+	"net"
+
+	linuxChatAppPb "github.com/hashsequence/Linux-Chat-App/pkg/pb/LinuxChatAppPb"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
-	"net"	
 )
 
 type LinuxChatServer struct {
-
 }
 
 func NewLinuxChatServer() *LinuxChatServer {
@@ -67,6 +67,6 @@ func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) err
 	return nil
 }
 
-func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxJobWorkerPb.chatRoomRequest) (*linuxChatAppPb.chatRoomResponse, error) {
+func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxJobWorkerPb.CreateChatRoomRequest) (*linuxChatAppPb.CreateChatRoomResponse, error) {
 
 }

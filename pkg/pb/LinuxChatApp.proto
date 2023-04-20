@@ -3,23 +3,34 @@ syntax = "proto3";
 package linuxChatApp;
 option go_package="/LinuxChatAppPb";
 
-message chatRoomRequest {
+message CreateChatRoomRequest {
     string userName = 1;
     string chatRoomName = 2;
-    string chatRoomId = 3;
+    repeated string users = 3;
 }
 
-message chatRoomResponse {
+message CreateChatRoomResponse {
     string hostUserName = 1;
     string chatRoomName = 2;
     string chatRoomId = 3;
 }
 
-message MessageRequest {
-    string chatRoomId = 1;
-    string userName = 2;
-    string message = 3;
-    string timeStamp = 4;
+message JoinChatRoomRequest {
+    string userName = 1;
+    string chatRoomName = 2;
+}
+
+message JoinChatRoomResponse {
+    bool success = 1;
+}
+
+message LeaveChatRoomRequest {
+    string userName = 1;
+    string chatRoomName = 2;
+}
+
+message LeaveChatRoomResponse {
+    bool success = 1;
 }
 
 message ChatRow {
@@ -32,9 +43,32 @@ message ChatLog {
     string ChatRow = 2;
 }
 
+message MessageRequest {
+    string userName = 1;
+    string otherUserName = 2;
+    string message = 3;
+    string timeStamp = 4;
+}
+
+message ViewListOfUsersRequest {
+}
+
+message ViewListOfUsersResponse {
+    repeated string users = 1;
+}
+
+message ViewListOfChatRoomsRequest {
+}
+
+message ViewListOfChatRoomsResponse {
+    repeated string chatRoomNames = 1;
+}
+
 service LinuxChatAppService {
-    rpc CreateChatRoom(chatRoomRequest) returns (chatRoomResponse) {};
-    rpc JoinChatRoom(chatRoomRequest) returns (chatRoomResponse) {};
-    rpc LeaveChatRoom(chatRoomRequest) returns (chatRoomResponse) {};
+    rpc CreateChatRoom(CreateChatRoomRequest) returns (CreateChatRoomResponse) {};
+    rpc JoinChatRoom(JoinChatRoomRequest) returns (JoinChatRoomResponse) {};
+    rpc LeaveChatRoom(LeaveChatRoomRequest) returns (LeaveChatRoomResponse) {};
     rpc SendMessage(stream MessageRequest) returns (stream ChatLog) {};
+    rpc ViewListOfUsers(ViewListOfUsersRequest) returns (ViewListOfUsersResponse) {};
+    rpc ViewListOfChatRooms(ViewListOfChatRoomsRequest) returns (ViewListOfChatRoomsResponse) {}; 
 }

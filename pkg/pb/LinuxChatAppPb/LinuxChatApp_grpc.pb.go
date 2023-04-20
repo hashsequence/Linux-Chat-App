@@ -19,20 +19,24 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	LinuxChatAppService_CreateChatRoom_FullMethodName = "/linuxChatApp.LinuxChatAppService/CreateChatRoom"
-	LinuxChatAppService_JoinChatRoom_FullMethodName   = "/linuxChatApp.LinuxChatAppService/JoinChatRoom"
-	LinuxChatAppService_LeaveChatRoom_FullMethodName  = "/linuxChatApp.LinuxChatAppService/LeaveChatRoom"
-	LinuxChatAppService_SendMessage_FullMethodName    = "/linuxChatApp.LinuxChatAppService/SendMessage"
+	LinuxChatAppService_CreateChatRoom_FullMethodName      = "/linuxChatApp.LinuxChatAppService/CreateChatRoom"
+	LinuxChatAppService_JoinChatRoom_FullMethodName        = "/linuxChatApp.LinuxChatAppService/JoinChatRoom"
+	LinuxChatAppService_LeaveChatRoom_FullMethodName       = "/linuxChatApp.LinuxChatAppService/LeaveChatRoom"
+	LinuxChatAppService_SendMessage_FullMethodName         = "/linuxChatApp.LinuxChatAppService/SendMessage"
+	LinuxChatAppService_ViewListOfUsers_FullMethodName     = "/linuxChatApp.LinuxChatAppService/ViewListOfUsers"
+	LinuxChatAppService_ViewListOfChatRooms_FullMethodName = "/linuxChatApp.LinuxChatAppService/ViewListOfChatRooms"
 )
 
 // LinuxChatAppServiceClient is the client API for LinuxChatAppService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LinuxChatAppServiceClient interface {
-	CreateChatRoom(ctx context.Context, in *ChatRoomRequest, opts ...grpc.CallOption) (*ChatRoomResponse, error)
-	JoinChatRoom(ctx context.Context, in *ChatRoomRequest, opts ...grpc.CallOption) (*ChatRoomResponse, error)
-	LeaveChatRoom(ctx context.Context, in *ChatRoomRequest, opts ...grpc.CallOption) (*ChatRoomResponse, error)
+	CreateChatRoom(ctx context.Context, in *CreateChatRoomRequest, opts ...grpc.CallOption) (*CreateChatRoomResponse, error)
+	JoinChatRoom(ctx context.Context, in *JoinChatRoomRequest, opts ...grpc.CallOption) (*JoinChatRoomResponse, error)
+	LeaveChatRoom(ctx context.Context, in *LeaveChatRoomRequest, opts ...grpc.CallOption) (*LeaveChatRoomResponse, error)
 	SendMessage(ctx context.Context, opts ...grpc.CallOption) (LinuxChatAppService_SendMessageClient, error)
+	ViewListOfUsers(ctx context.Context, in *ViewListOfUsersRequest, opts ...grpc.CallOption) (*ViewListOfUsersResponse, error)
+	ViewListOfChatRooms(ctx context.Context, in *ViewListOfChatRoomsRequest, opts ...grpc.CallOption) (*ViewListOfChatRoomsResponse, error)
 }
 
 type linuxChatAppServiceClient struct {
@@ -43,8 +47,8 @@ func NewLinuxChatAppServiceClient(cc grpc.ClientConnInterface) LinuxChatAppServi
 	return &linuxChatAppServiceClient{cc}
 }
 
-func (c *linuxChatAppServiceClient) CreateChatRoom(ctx context.Context, in *ChatRoomRequest, opts ...grpc.CallOption) (*ChatRoomResponse, error) {
-	out := new(ChatRoomResponse)
+func (c *linuxChatAppServiceClient) CreateChatRoom(ctx context.Context, in *CreateChatRoomRequest, opts ...grpc.CallOption) (*CreateChatRoomResponse, error) {
+	out := new(CreateChatRoomResponse)
 	err := c.cc.Invoke(ctx, LinuxChatAppService_CreateChatRoom_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -52,8 +56,8 @@ func (c *linuxChatAppServiceClient) CreateChatRoom(ctx context.Context, in *Chat
 	return out, nil
 }
 
-func (c *linuxChatAppServiceClient) JoinChatRoom(ctx context.Context, in *ChatRoomRequest, opts ...grpc.CallOption) (*ChatRoomResponse, error) {
-	out := new(ChatRoomResponse)
+func (c *linuxChatAppServiceClient) JoinChatRoom(ctx context.Context, in *JoinChatRoomRequest, opts ...grpc.CallOption) (*JoinChatRoomResponse, error) {
+	out := new(JoinChatRoomResponse)
 	err := c.cc.Invoke(ctx, LinuxChatAppService_JoinChatRoom_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -61,8 +65,8 @@ func (c *linuxChatAppServiceClient) JoinChatRoom(ctx context.Context, in *ChatRo
 	return out, nil
 }
 
-func (c *linuxChatAppServiceClient) LeaveChatRoom(ctx context.Context, in *ChatRoomRequest, opts ...grpc.CallOption) (*ChatRoomResponse, error) {
-	out := new(ChatRoomResponse)
+func (c *linuxChatAppServiceClient) LeaveChatRoom(ctx context.Context, in *LeaveChatRoomRequest, opts ...grpc.CallOption) (*LeaveChatRoomResponse, error) {
+	out := new(LeaveChatRoomResponse)
 	err := c.cc.Invoke(ctx, LinuxChatAppService_LeaveChatRoom_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -101,14 +105,34 @@ func (x *linuxChatAppServiceSendMessageClient) Recv() (*ChatLog, error) {
 	return m, nil
 }
 
+func (c *linuxChatAppServiceClient) ViewListOfUsers(ctx context.Context, in *ViewListOfUsersRequest, opts ...grpc.CallOption) (*ViewListOfUsersResponse, error) {
+	out := new(ViewListOfUsersResponse)
+	err := c.cc.Invoke(ctx, LinuxChatAppService_ViewListOfUsers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linuxChatAppServiceClient) ViewListOfChatRooms(ctx context.Context, in *ViewListOfChatRoomsRequest, opts ...grpc.CallOption) (*ViewListOfChatRoomsResponse, error) {
+	out := new(ViewListOfChatRoomsResponse)
+	err := c.cc.Invoke(ctx, LinuxChatAppService_ViewListOfChatRooms_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LinuxChatAppServiceServer is the server API for LinuxChatAppService service.
 // All implementations must embed UnimplementedLinuxChatAppServiceServer
 // for forward compatibility
 type LinuxChatAppServiceServer interface {
-	CreateChatRoom(context.Context, *ChatRoomRequest) (*ChatRoomResponse, error)
-	JoinChatRoom(context.Context, *ChatRoomRequest) (*ChatRoomResponse, error)
-	LeaveChatRoom(context.Context, *ChatRoomRequest) (*ChatRoomResponse, error)
+	CreateChatRoom(context.Context, *CreateChatRoomRequest) (*CreateChatRoomResponse, error)
+	JoinChatRoom(context.Context, *JoinChatRoomRequest) (*JoinChatRoomResponse, error)
+	LeaveChatRoom(context.Context, *LeaveChatRoomRequest) (*LeaveChatRoomResponse, error)
 	SendMessage(LinuxChatAppService_SendMessageServer) error
+	ViewListOfUsers(context.Context, *ViewListOfUsersRequest) (*ViewListOfUsersResponse, error)
+	ViewListOfChatRooms(context.Context, *ViewListOfChatRoomsRequest) (*ViewListOfChatRoomsResponse, error)
 	mustEmbedUnimplementedLinuxChatAppServiceServer()
 }
 
@@ -116,17 +140,23 @@ type LinuxChatAppServiceServer interface {
 type UnimplementedLinuxChatAppServiceServer struct {
 }
 
-func (UnimplementedLinuxChatAppServiceServer) CreateChatRoom(context.Context, *ChatRoomRequest) (*ChatRoomResponse, error) {
+func (UnimplementedLinuxChatAppServiceServer) CreateChatRoom(context.Context, *CreateChatRoomRequest) (*CreateChatRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateChatRoom not implemented")
 }
-func (UnimplementedLinuxChatAppServiceServer) JoinChatRoom(context.Context, *ChatRoomRequest) (*ChatRoomResponse, error) {
+func (UnimplementedLinuxChatAppServiceServer) JoinChatRoom(context.Context, *JoinChatRoomRequest) (*JoinChatRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method JoinChatRoom not implemented")
 }
-func (UnimplementedLinuxChatAppServiceServer) LeaveChatRoom(context.Context, *ChatRoomRequest) (*ChatRoomResponse, error) {
+func (UnimplementedLinuxChatAppServiceServer) LeaveChatRoom(context.Context, *LeaveChatRoomRequest) (*LeaveChatRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LeaveChatRoom not implemented")
 }
 func (UnimplementedLinuxChatAppServiceServer) SendMessage(LinuxChatAppService_SendMessageServer) error {
 	return status.Errorf(codes.Unimplemented, "method SendMessage not implemented")
+}
+func (UnimplementedLinuxChatAppServiceServer) ViewListOfUsers(context.Context, *ViewListOfUsersRequest) (*ViewListOfUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ViewListOfUsers not implemented")
+}
+func (UnimplementedLinuxChatAppServiceServer) ViewListOfChatRooms(context.Context, *ViewListOfChatRoomsRequest) (*ViewListOfChatRoomsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ViewListOfChatRooms not implemented")
 }
 func (UnimplementedLinuxChatAppServiceServer) mustEmbedUnimplementedLinuxChatAppServiceServer() {}
 
@@ -142,7 +172,7 @@ func RegisterLinuxChatAppServiceServer(s grpc.ServiceRegistrar, srv LinuxChatApp
 }
 
 func _LinuxChatAppService_CreateChatRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChatRoomRequest)
+	in := new(CreateChatRoomRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -154,13 +184,13 @@ func _LinuxChatAppService_CreateChatRoom_Handler(srv interface{}, ctx context.Co
 		FullMethod: LinuxChatAppService_CreateChatRoom_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LinuxChatAppServiceServer).CreateChatRoom(ctx, req.(*ChatRoomRequest))
+		return srv.(LinuxChatAppServiceServer).CreateChatRoom(ctx, req.(*CreateChatRoomRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _LinuxChatAppService_JoinChatRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChatRoomRequest)
+	in := new(JoinChatRoomRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -172,13 +202,13 @@ func _LinuxChatAppService_JoinChatRoom_Handler(srv interface{}, ctx context.Cont
 		FullMethod: LinuxChatAppService_JoinChatRoom_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LinuxChatAppServiceServer).JoinChatRoom(ctx, req.(*ChatRoomRequest))
+		return srv.(LinuxChatAppServiceServer).JoinChatRoom(ctx, req.(*JoinChatRoomRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _LinuxChatAppService_LeaveChatRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChatRoomRequest)
+	in := new(LeaveChatRoomRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -190,7 +220,7 @@ func _LinuxChatAppService_LeaveChatRoom_Handler(srv interface{}, ctx context.Con
 		FullMethod: LinuxChatAppService_LeaveChatRoom_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LinuxChatAppServiceServer).LeaveChatRoom(ctx, req.(*ChatRoomRequest))
+		return srv.(LinuxChatAppServiceServer).LeaveChatRoom(ctx, req.(*LeaveChatRoomRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -221,6 +251,42 @@ func (x *linuxChatAppServiceSendMessageServer) Recv() (*MessageRequest, error) {
 	return m, nil
 }
 
+func _LinuxChatAppService_ViewListOfUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ViewListOfUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinuxChatAppServiceServer).ViewListOfUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinuxChatAppService_ViewListOfUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinuxChatAppServiceServer).ViewListOfUsers(ctx, req.(*ViewListOfUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinuxChatAppService_ViewListOfChatRooms_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ViewListOfChatRoomsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinuxChatAppServiceServer).ViewListOfChatRooms(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinuxChatAppService_ViewListOfChatRooms_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinuxChatAppServiceServer).ViewListOfChatRooms(ctx, req.(*ViewListOfChatRoomsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LinuxChatAppService_ServiceDesc is the grpc.ServiceDesc for LinuxChatAppService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -239,6 +305,14 @@ var LinuxChatAppService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LeaveChatRoom",
 			Handler:    _LinuxChatAppService_LeaveChatRoom_Handler,
+		},
+		{
+			MethodName: "ViewListOfUsers",
+			Handler:    _LinuxChatAppService_ViewListOfUsers_Handler,
+		},
+		{
+			MethodName: "ViewListOfChatRooms",
+			Handler:    _LinuxChatAppService_ViewListOfChatRooms_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
