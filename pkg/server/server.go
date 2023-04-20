@@ -8,16 +8,21 @@ import (
 	"io/ioutil"
 	"net"
 
+	"github.com/hashsequence/Linux-Chat-App/pkg/data"
 	linuxChatAppPb "github.com/hashsequence/Linux-Chat-App/pkg/pb/LinuxChatAppPb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
 type LinuxChatServer struct {
+	linuxChatAppPb.UnimplementedLinuxChatAppServiceServer
+	dataStore *data.DataStore
 }
 
 func NewLinuxChatServer() *LinuxChatServer {
-	return &LinuxChatServer{}
+	return &LinuxChatServer{
+		dataStore: data.NewDataStore(),
+	}
 }
 
 func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) error {
@@ -57,7 +62,7 @@ func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) err
 	srv := grpc.NewServer(grpc.Creds(creds))
 
 	// Register the handler object
-	linuxChatAppPb.RegisterLinuxChatAppServiceServer(srv, s)
+	linuxChatAppPb.RegisterLinuxChatAppServiceServer(srv, this)
 
 	// Serve and Listen
 	if err := srv.Serve(lis); err != nil {
@@ -67,6 +72,38 @@ func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) err
 	return nil
 }
 
-func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxJobWorkerPb.CreateChatRoomRequest) (*linuxChatAppPb.CreateChatRoomResponse, error) {
+func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxChatAppPb.CreateChatRoomRequest) (*linuxChatAppPb.CreateChatRoomResponse, error) {
 
+	chatRoom := data.NewChatRoom(req.GetUserName(), req.GetChatRoomName(), req.GetUsers(), false)
+	success := this.dataStore.AddChatRoom(chatRoom)
+
+	resp := &linuxChatAppPb.CreateChatRoomResponse{
+		HostUserName: req.GetUserName(),
+		ChatRoomName: req.GetChatRoomName(),
+	}
+
+	if !success {
+		return resp, fmt.Errorf("CreateChatRoom | Failed To Add ChatRoom")
+	}
+	return resp, nil
+}
+
+func (this *LinuxChatServer) JoinChatRoom(ctx context.Context, req *linuxChatAppPb.JoinChatRoomRequest) (*linuxChatAppPb.JoinChatRoomResponse, error) {
+	return nil, nil
+}
+
+func (this *LinuxChatServer) LeaveChatRoom(ctx context.Context, req *linuxChatAppPb.LeaveChatRoomRequest) (*linuxChatAppPb.LeaveChatRoomResponse, error) {
+	return nil, nil
+}
+
+func (this *LinuxChatServer) SendMessage(stream linuxChatAppPb.LinuxChatAppService_SendMessageServer) error {
+	return nil
+}
+
+func (this *LinuxChatServer) ViewListOfUsers(ctx context.Context, req *linuxChatAppPb.ViewListOfUsersRequest) (*linuxChatAppPb.ViewListOfUsersResponse, error) {
+	return nil, nil
+}
+
+func (this *LinuxChatServer) ViewListOfChatRooms(ctx context.Context, req *linuxChatAppPb.ViewListOfChatRoomsRequest) (*linuxChatAppPb.ViewListOfChatRoomsResponse, error) {
+	return nil, nil
 }

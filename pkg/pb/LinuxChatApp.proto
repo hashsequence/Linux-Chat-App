@@ -12,7 +12,6 @@ message CreateChatRoomRequest {
 message CreateChatRoomResponse {
     string hostUserName = 1;
     string chatRoomName = 2;
-    string chatRoomId = 3;
 }
 
 message JoinChatRoomRequest {
@@ -33,12 +32,12 @@ message LeaveChatRoomResponse {
     bool success = 1;
 }
 
-message ChatRow {
+message MessageRow {
     string userName = 1;
     string timeStamp = 2;
     string message = 3;
 }
-message ChatLog {
+message MessageResponse {
     string chatRoomName = 1;
     string ChatRow = 2;
 }
@@ -68,7 +67,7 @@ service LinuxChatAppService {
     rpc CreateChatRoom(CreateChatRoomRequest) returns (CreateChatRoomResponse) {};
     rpc JoinChatRoom(JoinChatRoomRequest) returns (JoinChatRoomResponse) {};
     rpc LeaveChatRoom(LeaveChatRoomRequest) returns (LeaveChatRoomResponse) {};
-    rpc SendMessage(stream MessageRequest) returns (stream ChatLog) {};
+    rpc SendMessage(stream MessageRequest) returns (stream MessageResponse) {};
     rpc ViewListOfUsers(ViewListOfUsersRequest) returns (ViewListOfUsersResponse) {};
     rpc ViewListOfChatRooms(ViewListOfChatRoomsRequest) returns (ViewListOfChatRoomsResponse) {}; 
 }

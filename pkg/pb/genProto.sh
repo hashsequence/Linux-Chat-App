@@ -1,3 +1,5 @@
 #!/bin/bash
 
-protoc --go-grpc_out=. *.proto
+protoc \
+--go_out=. \
+--go-grpc_out=. *.proto

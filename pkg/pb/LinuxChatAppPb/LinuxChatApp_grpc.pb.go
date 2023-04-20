@@ -85,7 +85,7 @@ func (c *linuxChatAppServiceClient) SendMessage(ctx context.Context, opts ...grp
 
 type LinuxChatAppService_SendMessageClient interface {
 	Send(*MessageRequest) error
-	Recv() (*ChatLog, error)
+	Recv() (*MessageResponse, error)
 	grpc.ClientStream
 }
 
@@ -97,8 +97,8 @@ func (x *linuxChatAppServiceSendMessageClient) Send(m *MessageRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *linuxChatAppServiceSendMessageClient) Recv() (*ChatLog, error) {
-	m := new(ChatLog)
+func (x *linuxChatAppServiceSendMessageClient) Recv() (*MessageResponse, error) {
+	m := new(MessageResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func _LinuxChatAppService_SendMessage_Handler(srv interface{}, stream grpc.Serve
 }
 
 type LinuxChatAppService_SendMessageServer interface {
-	Send(*ChatLog) error
+	Send(*MessageResponse) error
 	Recv() (*MessageRequest, error)
 	grpc.ServerStream
 }
@@ -239,7 +239,7 @@ type linuxChatAppServiceSendMessageServer struct {
 	grpc.ServerStream
 }
 
-func (x *linuxChatAppServiceSendMessageServer) Send(m *ChatLog) error {
+func (x *linuxChatAppServiceSendMessageServer) Send(m *MessageResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
