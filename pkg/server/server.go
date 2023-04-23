@@ -89,11 +89,28 @@ func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxChatA
 }
 
 func (this *LinuxChatServer) JoinChatRoom(ctx context.Context, req *linuxChatAppPb.JoinChatRoomRequest) (*linuxChatAppPb.JoinChatRoomResponse, error) {
-	return nil, nil
+	success := this.dataStore.AddUser(req.GetUserName(), req.GetChatRoomName())
+	resp := &linuxChatAppPb.JoinChatRoomResponse{
+		Success: success,
+	}
+
+	if !success {
+		return resp, fmt.Errorf("JoinChatRoom | %v Failed To Join ChatRoom %v\n", req.GetUserName(), req.GetChatRoomName())
+	}
+	return resp, nil
 }
 
 func (this *LinuxChatServer) LeaveChatRoom(ctx context.Context, req *linuxChatAppPb.LeaveChatRoomRequest) (*linuxChatAppPb.LeaveChatRoomResponse, error) {
-	return nil, nil
+
+	success := this.dataStore.AddUser(req.GetUserName(), req.GetChatRoomName())
+	resp := &linuxChatAppPb.LeaveChatRoomResponse{
+		Success: success,
+	}
+
+	if !success {
+		return resp, fmt.Errorf("LeaveChatRoom | %v Failed To Leave ChatRoom %v\n", req.GetUserName(), req.GetChatRoomName())
+	}
+	return resp, nil
 }
 
 func (this *LinuxChatServer) SendMessage(stream linuxChatAppPb.LinuxChatAppService_SendMessageServer) error {
