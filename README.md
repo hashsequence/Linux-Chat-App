@@ -20,6 +20,8 @@ cli-client and server chat application implemented in Go
 
 ## High-level design
 
+* services
+
 ```
 +------------------+                   +-------------------+                     +--------------------+
 |                  |                   |                   |                     |                    |
@@ -33,4 +35,22 @@ cli-client and server chat application implemented in Go
 |                  |                   |                   |                     |                    |
 +------------------+                   +-------------------+                     +--------------------+
 
+```
+* data
+
+```
+     users                                                     chatRooms
++--------------------+                                    +--------------------+
+|  array:            |                                    |   array:           |
+|  +-------------+   |                                    |  +---------------+ |
+|  | userName    |   |       chatRooms has chatroom       |  | chatRoomName  | |
+|  | chatRooms   +---+----------------------------------->|  | users         | |
+|  +-------------+   |      users has user                |  |               | |
+|                    |<-----------------------------------+--+---------------+ |
+|                    |                                    |                    |
+|                    |                                    |                    |
+|                    |                                    |                    |
+|                    |                                    |                    |
+|                    |                                    |                    |
++--------------------+                                    +--------------------+
 ```

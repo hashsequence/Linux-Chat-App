@@ -75,34 +75,27 @@ func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) err
 func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxChatAppPb.CreateChatRoomRequest) (*linuxChatAppPb.CreateChatRoomResponse, error) {
 
 	chatRoom := data.NewChatRoom(req.GetUserName(), req.GetChatRoomName(), req.GetUsers(), false)
-	success := this.dataStore.AddChatRoom(chatRoom)
+	this.dataStore.AddChatRoom(chatRoom)
 
 	resp := &linuxChatAppPb.CreateChatRoomResponse{
 		HostUserName: req.GetUserName(),
 		ChatRoomName: req.GetChatRoomName(),
 	}
 
-	if !success {
-		return resp, fmt.Errorf("CreateChatRoom | Failed To Add ChatRoom")
-	}
 	return resp, nil
 }
 
 func (this *LinuxChatServer) JoinChatRoom(ctx context.Context, req *linuxChatAppPb.JoinChatRoomRequest) (*linuxChatAppPb.JoinChatRoomResponse, error) {
-	success := this.dataStore.AddUser(req.GetUserName(), req.GetChatRoomName())
+	this.dataStore.AddUser(req.GetUserName(), req.GetChatRoomName())
 	resp := &linuxChatAppPb.JoinChatRoomResponse{
-		Success: success,
-	}
-
-	if !success {
-		return resp, fmt.Errorf("JoinChatRoom | %v Failed To Join ChatRoom %v\n", req.GetUserName(), req.GetChatRoomName())
+		Success: true,
 	}
 	return resp, nil
 }
 
 func (this *LinuxChatServer) LeaveChatRoom(ctx context.Context, req *linuxChatAppPb.LeaveChatRoomRequest) (*linuxChatAppPb.LeaveChatRoomResponse, error) {
 
-	success := this.dataStore.AddUser(req.GetUserName(), req.GetChatRoomName())
+	success := this.dataStore.LeaveChatRoom(req.GetUserName(), req.GetChatRoomName())
 	resp := &linuxChatAppPb.LeaveChatRoomResponse{
 		Success: success,
 	}
