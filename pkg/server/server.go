@@ -111,9 +111,20 @@ func (this *LinuxChatServer) SendMessage(stream linuxChatAppPb.LinuxChatAppServi
 }
 
 func (this *LinuxChatServer) ViewListOfUsers(ctx context.Context, req *linuxChatAppPb.ViewListOfUsersRequest) (*linuxChatAppPb.ViewListOfUsersResponse, error) {
-	return nil, nil
+	resp := &linuxChatAppPb.ViewListOfUsersResponse{
+		Users: this.dataStore.GetUsers(),
+	}
+	return resp, nil
 }
 
 func (this *LinuxChatServer) ViewListOfChatRooms(ctx context.Context, req *linuxChatAppPb.ViewListOfChatRoomsRequest) (*linuxChatAppPb.ViewListOfChatRoomsResponse, error) {
-	return nil, nil
+	chatRoomsMap := this.dataStore.GetChatRooms()
+	chatRooms := []string{}
+	for key := range chatRoomsMap {
+		chatRooms = append(chatRooms, key)
+	}
+	resp := &linuxChatAppPb.ViewListOfChatRoomsResponse{
+		ChatRoomNames: chatRooms,
+	}
+	return resp, nil
 }

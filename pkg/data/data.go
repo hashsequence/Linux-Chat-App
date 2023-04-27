@@ -14,6 +14,7 @@ type ChatRoom struct {
 	users        map[string]*User
 	private      bool
 	createdBy    string
+	messages     [][]string
 }
 
 type DataStore struct {
@@ -124,6 +125,7 @@ func NewChatRoom(userName string, chatRoomName string, users []string, private b
 		users:        userMap,
 		private:      private,
 		createdBy:    userName,
+		messages:     [][]string{},
 	}
 	for _, val := range users {
 		userMap[val] = &User{val, map[string]*ChatRoom{
