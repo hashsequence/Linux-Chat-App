@@ -19,6 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	LinuxChatAppService_CreateUser_FullMethodName          = "/linuxChatApp.LinuxChatAppService/CreateUser"
+	LinuxChatAppService_DeleteUser_FullMethodName          = "/linuxChatApp.LinuxChatAppService/DeleteUser"
 	LinuxChatAppService_CreateChatRoom_FullMethodName      = "/linuxChatApp.LinuxChatAppService/CreateChatRoom"
 	LinuxChatAppService_JoinChatRoom_FullMethodName        = "/linuxChatApp.LinuxChatAppService/JoinChatRoom"
 	LinuxChatAppService_LeaveChatRoom_FullMethodName       = "/linuxChatApp.LinuxChatAppService/LeaveChatRoom"
@@ -31,6 +33,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LinuxChatAppServiceClient interface {
+	CreateUser(ctx context.Context, in *CreateUserNameRequest, opts ...grpc.CallOption) (*CreateUserNameResponse, error)
+	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 	CreateChatRoom(ctx context.Context, in *CreateChatRoomRequest, opts ...grpc.CallOption) (*CreateChatRoomResponse, error)
 	JoinChatRoom(ctx context.Context, in *JoinChatRoomRequest, opts ...grpc.CallOption) (*JoinChatRoomResponse, error)
 	LeaveChatRoom(ctx context.Context, in *LeaveChatRoomRequest, opts ...grpc.CallOption) (*LeaveChatRoomResponse, error)
@@ -45,6 +49,24 @@ type linuxChatAppServiceClient struct {
 
 func NewLinuxChatAppServiceClient(cc grpc.ClientConnInterface) LinuxChatAppServiceClient {
 	return &linuxChatAppServiceClient{cc}
+}
+
+func (c *linuxChatAppServiceClient) CreateUser(ctx context.Context, in *CreateUserNameRequest, opts ...grpc.CallOption) (*CreateUserNameResponse, error) {
+	out := new(CreateUserNameResponse)
+	err := c.cc.Invoke(ctx, LinuxChatAppService_CreateUser_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linuxChatAppServiceClient) DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error) {
+	out := new(DeleteUserResponse)
+	err := c.cc.Invoke(ctx, LinuxChatAppService_DeleteUser_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *linuxChatAppServiceClient) CreateChatRoom(ctx context.Context, in *CreateChatRoomRequest, opts ...grpc.CallOption) (*CreateChatRoomResponse, error) {
@@ -127,6 +149,8 @@ func (c *linuxChatAppServiceClient) ViewListOfChatRooms(ctx context.Context, in 
 // All implementations must embed UnimplementedLinuxChatAppServiceServer
 // for forward compatibility
 type LinuxChatAppServiceServer interface {
+	CreateUser(context.Context, *CreateUserNameRequest) (*CreateUserNameResponse, error)
+	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	CreateChatRoom(context.Context, *CreateChatRoomRequest) (*CreateChatRoomResponse, error)
 	JoinChatRoom(context.Context, *JoinChatRoomRequest) (*JoinChatRoomResponse, error)
 	LeaveChatRoom(context.Context, *LeaveChatRoomRequest) (*LeaveChatRoomResponse, error)
@@ -140,6 +164,12 @@ type LinuxChatAppServiceServer interface {
 type UnimplementedLinuxChatAppServiceServer struct {
 }
 
+func (UnimplementedLinuxChatAppServiceServer) CreateUser(context.Context, *CreateUserNameRequest) (*CreateUserNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
+}
+func (UnimplementedLinuxChatAppServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
+}
 func (UnimplementedLinuxChatAppServiceServer) CreateChatRoom(context.Context, *CreateChatRoomRequest) (*CreateChatRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateChatRoom not implemented")
 }
@@ -169,6 +199,42 @@ type UnsafeLinuxChatAppServiceServer interface {
 
 func RegisterLinuxChatAppServiceServer(s grpc.ServiceRegistrar, srv LinuxChatAppServiceServer) {
 	s.RegisterService(&LinuxChatAppService_ServiceDesc, srv)
+}
+
+func _LinuxChatAppService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateUserNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinuxChatAppServiceServer).CreateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinuxChatAppService_CreateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinuxChatAppServiceServer).CreateUser(ctx, req.(*CreateUserNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinuxChatAppService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinuxChatAppServiceServer).DeleteUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinuxChatAppService_DeleteUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinuxChatAppServiceServer).DeleteUser(ctx, req.(*DeleteUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _LinuxChatAppService_CreateChatRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -294,6 +360,14 @@ var LinuxChatAppService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "linuxChatApp.LinuxChatAppService",
 	HandlerType: (*LinuxChatAppServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateUser",
+			Handler:    _LinuxChatAppService_CreateUser_Handler,
+		},
+		{
+			MethodName: "DeleteUser",
+			Handler:    _LinuxChatAppService_DeleteUser_Handler,
+		},
 		{
 			MethodName: "CreateChatRoom",
 			Handler:    _LinuxChatAppService_CreateChatRoom_Handler,

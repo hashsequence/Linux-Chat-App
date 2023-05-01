@@ -72,6 +72,26 @@ func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) err
 	return nil
 }
 
+func (this *LinuxChatServer) CreateUser(ctx context.Context, req *linuxChatAppPb.CreateUserNameRequest) (*linuxChatAppPb.CreateUserNameResponse, error) {
+
+	isCreated := this.dataStore.CreateUser(req.GetUserName())
+	resp := &linuxChatAppPb.CreateUserNameResponse{
+		UserName: req.GetUserName(),
+		Success:  isCreated,
+	}
+	return resp, nil
+}
+
+func (this *LinuxChatServer) DeleteUser(ctx context.Context, req *linuxChatAppPb.DeleteUserRequest) (*linuxChatAppPb.DeleteUserResponse, error) {
+
+	isDeleted := this.dataStore.DeleteUser(req.GetUserName())
+	resp := &linuxChatAppPb.DeleteUserResponse{
+		UserName: req.GetUserName(),
+		Success:  isDeleted,
+	}
+	return resp, nil
+}
+
 func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxChatAppPb.CreateChatRoomRequest) (*linuxChatAppPb.CreateChatRoomResponse, error) {
 
 	chatRoom := data.NewChatRoom(req.GetUserName(), req.GetChatRoomName(), req.GetUsers(), false)

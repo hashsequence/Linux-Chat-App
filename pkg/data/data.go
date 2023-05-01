@@ -23,6 +23,37 @@ type DataStore struct {
 	chatRooms map[string]*ChatRoom
 }
 
+func (this *DataStore) CreateUser(userName string) bool {
+	this.Lock()
+	defer func() {
+		this.Unlock()
+	}()
+	if _, ok := this.users[userName]; !ok {
+		this.users[userName] = &User{
+			userName:  userName,
+			chatRooms: map[string]*ChatRoom{},
+		}
+		return true
+	}
+	return false
+}
+
+func (this *DataStore) DeleteUser(userName string) bool {
+	this.Lock()
+	defer func() {
+		this.Unlock()
+	}()
+	if user, ok := this.users[userName]; ok {
+		chatRooms := user.chatRooms
+		for key := range chatRooms {
+			delete(chatRooms[key].users, userName)
+		}
+		delete(this.users, userName)
+		return true
+	}
+	return false
+}
+
 func (this *DataStore) GetUsers() []string {
 	this.RLock()
 	defer func() {
@@ -101,9 +132,9 @@ func (this *DataStore) LeaveChatRoom(userName string, chatRoomName string) bool 
 		success = false
 	}
 	//if user's chatRoom is 0 then delete user from users
-	if len(this.users[userName].chatRooms) < 1 {
-		delete(this.users, userName)
-	}
+	//if len(this.users[userName].chatRooms) < 1 {
+	//	delete(this.users, userName)
+	//}
 	//if chatRoom has 0 users then delete chatRoom
 	if len(this.chatRooms[chatRoomName].users) < 1 {
 		delete(this.chatRooms, chatRoomName)

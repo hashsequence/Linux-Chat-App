@@ -14,3 +14,20 @@ func GetTimeStamp() string {
 func GetNewUUID() string {
 	return guuid.New().String()
 }
+
+func GetArgsArr(s string) []string {
+	arr := []string{}
+	currStr := []byte{}
+	for i := 0; i < len(s); i++ {
+		if s[i] != ' ' {
+			arr = append(arr, string(currStr))
+			currStr = []byte{}
+		} else {
+			currStr = append(currStr, s[i])
+		}
+	}
+	if len(currStr) > 0 {
+		arr = append(arr, string(currStr))
+	}
+	return arr
+}

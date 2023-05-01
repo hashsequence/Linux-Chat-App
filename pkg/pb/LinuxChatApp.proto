@@ -3,6 +3,24 @@ syntax = "proto3";
 package linuxChatApp;
 option go_package="/LinuxChatAppPb";
 
+message CreateUserNameRequest {
+    string userName = 1;
+}
+
+message CreateUserNameResponse {
+    string userName = 1;
+    bool success = 2;
+}
+
+message DeleteUserRequest {
+    string userName = 1;
+}
+
+message DeleteUserResponse {
+    string userName = 1;
+    bool success = 2;
+}
+
 message CreateChatRoomRequest {
     string userName = 1;
     string chatRoomName = 2;
@@ -20,7 +38,9 @@ message JoinChatRoomRequest {
 }
 
 message JoinChatRoomResponse {
-    bool success = 1;
+    string userName = 1;
+    string chatRoomName = 2;
+    bool success = 3;
 }
 
 message LeaveChatRoomRequest {
@@ -29,7 +49,9 @@ message LeaveChatRoomRequest {
 }
 
 message LeaveChatRoomResponse {
-    bool success = 1;
+    string userName = 1;
+    string chatRoomName = 2;
+    bool success = 3;
 }
 
 message MessageRow {
@@ -64,6 +86,8 @@ message ViewListOfChatRoomsResponse {
 }
 
 service LinuxChatAppService {
+    rpc CreateUser(CreateUserNameRequest) returns (CreateUserNameResponse) {};
+    rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {};
     rpc CreateChatRoom(CreateChatRoomRequest) returns (CreateChatRoomResponse) {};
     rpc JoinChatRoom(JoinChatRoomRequest) returns (JoinChatRoomResponse) {};
     rpc LeaveChatRoom(LeaveChatRoomRequest) returns (LeaveChatRoomResponse) {};
