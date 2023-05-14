@@ -19,7 +19,7 @@ var (
 	key              = "./ssl/client-key.pem"
 	ca               = "./ssl/ca-cert.pem"
 	addr             = "localhost:50051"
-	heatbeatInterval = 60 //60 seconds
+	heatbeatInterval = 300 // 300 seconds
 )
 
 var userName string
