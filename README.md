@@ -89,9 +89,9 @@ Simple cli-client and server in-memory chat application implemented in Go and gr
 
 ## How does the client and servers are still know they are live
 
-* the server deletes the user if the user has been afk after 30 minutes (time can be configured in [serverMain.go](./cmd/server/serverMain.go))
+* the server deletes the user if the user has been afk after 30 minutes or 1800 seconds (time can be configured in [serverMain.go](./cmd/server/serverMain.go) via ttl variable)
 
-* if the client has no open chatrooms, then the client will start pinging the server every 5 minutes(time can be configured in [clientMain.go](./cmd/client/clientMain.go))
+* if the client has no open chatrooms, then the client will start pinging the server every 5 minutes or 300 seconds (time can be configured in [clientMain.go](./cmd/client/clientMain.go) via heatbeatInterval variable)
 
 ## Usage
 
