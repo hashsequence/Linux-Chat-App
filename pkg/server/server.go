@@ -28,9 +28,8 @@ func NewLinuxChatServer(messageQueueSize int, ttl_Sec int64, done chan struct{})
 
 func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) error {
 	// Load the certificates from disk
-	done := make(chan struct{})
 	defer func() {
-		close(done)
+		close(this.dataStore.Done)
 	}()
 
 	certificate, err := tls.LoadX509KeyPair(serverCrt, serverKey)
@@ -70,7 +69,7 @@ func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) err
 	// Register the handler object
 	linuxChatAppPb.RegisterLinuxChatAppServiceServer(srv, this)
 	//run thread to send out messages
-	go this.dataStore.SendOutMessages(done)
+	go this.dataStore.SendOutMessages()
 	// Serve and Listen
 	if err := srv.Serve(lis); err != nil {
 		return fmt.Errorf("grpc serve error: %v", err)
@@ -126,7 +125,9 @@ func (this *LinuxChatServer) LeaveChatRoom(ctx context.Context, req *linuxChatAp
 	fmt.Printf("%v is leaving %v\n", req.GetUserName(), req.GetChatRoomName())
 	success := this.dataStore.LeaveChatRoom(req.GetUserName(), req.GetChatRoomName())
 	resp := &linuxChatAppPb.LeaveChatRoomResponse{
-		Success: success,
+		UserName:     req.GetUserName(),
+		ChatRoomName: req.GetChatRoomName(),
+		Success:      success,
 	}
 
 	if !success {
@@ -174,5 +175,10 @@ func (this *LinuxChatServer) ViewListOfChatRooms(ctx context.Context, req *linux
 	resp := &linuxChatAppPb.ViewListOfChatRoomsResponse{
 		ChatRoomNames: chatRooms,
 	}
+	return resp, nil
+}
+
+func (this *LinuxChatServer) Ping(ctx context.Context, req *linuxChatAppPb.PingRequest) (*linuxChatAppPb.PingResponse, error) {
+	resp := &linuxChatAppPb.PingResponse{}
 	return resp, nil
 }

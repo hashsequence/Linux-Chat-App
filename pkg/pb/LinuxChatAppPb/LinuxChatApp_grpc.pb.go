@@ -27,6 +27,7 @@ const (
 	LinuxChatAppService_SendMessage_FullMethodName         = "/linuxChatApp.LinuxChatAppService/SendMessage"
 	LinuxChatAppService_ViewListOfUsers_FullMethodName     = "/linuxChatApp.LinuxChatAppService/ViewListOfUsers"
 	LinuxChatAppService_ViewListOfChatRooms_FullMethodName = "/linuxChatApp.LinuxChatAppService/ViewListOfChatRooms"
+	LinuxChatAppService_Ping_FullMethodName                = "/linuxChatApp.LinuxChatAppService/Ping"
 )
 
 // LinuxChatAppServiceClient is the client API for LinuxChatAppService service.
@@ -41,6 +42,7 @@ type LinuxChatAppServiceClient interface {
 	SendMessage(ctx context.Context, opts ...grpc.CallOption) (LinuxChatAppService_SendMessageClient, error)
 	ViewListOfUsers(ctx context.Context, in *ViewListOfUsersRequest, opts ...grpc.CallOption) (*ViewListOfUsersResponse, error)
 	ViewListOfChatRooms(ctx context.Context, in *ViewListOfChatRoomsRequest, opts ...grpc.CallOption) (*ViewListOfChatRoomsResponse, error)
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 }
 
 type linuxChatAppServiceClient struct {
@@ -145,6 +147,15 @@ func (c *linuxChatAppServiceClient) ViewListOfChatRooms(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *linuxChatAppServiceClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+	out := new(PingResponse)
+	err := c.cc.Invoke(ctx, LinuxChatAppService_Ping_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LinuxChatAppServiceServer is the server API for LinuxChatAppService service.
 // All implementations must embed UnimplementedLinuxChatAppServiceServer
 // for forward compatibility
@@ -157,6 +168,7 @@ type LinuxChatAppServiceServer interface {
 	SendMessage(LinuxChatAppService_SendMessageServer) error
 	ViewListOfUsers(context.Context, *ViewListOfUsersRequest) (*ViewListOfUsersResponse, error)
 	ViewListOfChatRooms(context.Context, *ViewListOfChatRoomsRequest) (*ViewListOfChatRoomsResponse, error)
+	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	mustEmbedUnimplementedLinuxChatAppServiceServer()
 }
 
@@ -187,6 +199,9 @@ func (UnimplementedLinuxChatAppServiceServer) ViewListOfUsers(context.Context, *
 }
 func (UnimplementedLinuxChatAppServiceServer) ViewListOfChatRooms(context.Context, *ViewListOfChatRoomsRequest) (*ViewListOfChatRoomsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ViewListOfChatRooms not implemented")
+}
+func (UnimplementedLinuxChatAppServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedLinuxChatAppServiceServer) mustEmbedUnimplementedLinuxChatAppServiceServer() {}
 
@@ -353,6 +368,24 @@ func _LinuxChatAppService_ViewListOfChatRooms_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LinuxChatAppService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinuxChatAppServiceServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinuxChatAppService_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinuxChatAppServiceServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LinuxChatAppService_ServiceDesc is the grpc.ServiceDesc for LinuxChatAppService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -387,6 +420,10 @@ var LinuxChatAppService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ViewListOfChatRooms",
 			Handler:    _LinuxChatAppService_ViewListOfChatRooms_Handler,
+		},
+		{
+			MethodName: "Ping",
+			Handler:    _LinuxChatAppService_Ping_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

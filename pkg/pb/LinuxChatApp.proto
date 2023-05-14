@@ -86,6 +86,13 @@ message ViewListOfChatRoomsResponse {
     repeated string chatRoomNames = 1;
 }
 
+message PingRequest {
+
+}
+
+message PingResponse {
+
+}
 service LinuxChatAppService {
     rpc CreateUser(CreateUserNameRequest) returns (CreateUserNameResponse) {};
     rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {};
@@ -95,4 +102,5 @@ service LinuxChatAppService {
     rpc SendMessage(stream MessageRequest) returns (stream MessageResponse) {};
     rpc ViewListOfUsers(ViewListOfUsersRequest) returns (ViewListOfUsersResponse) {};
     rpc ViewListOfChatRooms(ViewListOfChatRoomsRequest) returns (ViewListOfChatRoomsResponse) {}; 
+    rpc Ping(PingRequest) returns (PingResponse){}
 }

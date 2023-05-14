@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	clientLib "github.com/hashsequence/Linux-Chat-App/pkg/client"
 	"github.com/hashsequence/Linux-Chat-App/pkg/pb/LinuxChatAppPb"
@@ -14,10 +15,11 @@ import (
 )
 
 var (
-	crt  = "./ssl/client-cert.pem"
-	key  = "./ssl/client-key.pem"
-	ca   = "./ssl/ca-cert.pem"
-	addr = "localhost:50051"
+	crt              = "./ssl/client-cert.pem"
+	key              = "./ssl/client-key.pem"
+	ca               = "./ssl/ca-cert.pem"
+	addr             = "localhost:50051"
+	heatbeatInterval = 60 //60 seconds
 )
 
 var userName string
@@ -36,15 +38,17 @@ const RootHelpMessage = "\nCommands:\nviewChatRooms: get a list of available cha
 
 func main() {
 
-	client, err := clientLib.CreateClient(ca, crt, key, addr)
-	if err != nil {
-		panic(err)
-	}
-
 	input := make(chan string)
 	done := make(chan struct{})
+	errChannel := make(chan error)
 	scan := bufio.NewScanner(os.Stdin)
 	userNameCreated := false
+
+	client, err := clientLib.CreateClient(ca, crt, key, addr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	cleanUp := func() {
 		fmt.Printf("Client Logging off, deleting %v from ChatService\n", userName)
@@ -52,6 +56,7 @@ func main() {
 			UserName: userName,
 		})
 		close(done)
+		close(errChannel)
 		fmt.Println("Client Closing")
 	}
 	defer func() {
@@ -60,10 +65,7 @@ func main() {
 		}
 		cleanUp()
 	}()
-	if !userNameCreated {
-		fmt.Println("please Create UserName:")
-	}
-	errChannel := make(chan error)
+
 	go func() {
 		errMsg := <-errChannel
 		cleanUp()
@@ -76,6 +78,27 @@ func main() {
 		}
 	}()
 
+	ticker := time.NewTicker(time.Duration(heatbeatInterval) * time.Second)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				_, err := client.Ping(context.Background(), &linuxChatAppPb.PingRequest{})
+				if err != nil {
+					fmt.Println("\nPing request failed")
+					errChannel <- err
+					return
+				}
+			case <-done:
+				fmt.Println("\nShutting down client because heartbeat ping failed")
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+	if !userNameCreated {
+		fmt.Println("\nplease Create UserName:")
+	}
 	func() {
 		for cmd := range input {
 			select {
@@ -100,7 +123,7 @@ func main() {
 						fmt.Println("please Create UserName:")
 					}
 					if err != nil {
-						panic(err)
+						errChannel <- err
 					}
 				} else if len(args) == 1 && args[0] == "viewChatRooms" {
 					req := &linuxChatAppPb.ViewListOfChatRoomsRequest{
@@ -108,7 +131,7 @@ func main() {
 					}
 					resp, err := client.ViewListOfChatRooms(context.Background(), req)
 					if err != nil {
-						panic(err)
+						errChannel <- err
 					} else {
 						fmt.Println(resp.GetChatRoomNames())
 					}
@@ -118,50 +141,59 @@ func main() {
 					}
 					resp, err := client.ViewListOfUsers(context.Background(), req)
 					if err != nil {
-						panic(err)
+						errChannel <- err
 					} else {
 						fmt.Println(resp.GetUsers())
 					}
 				} else if len(args) >= 2 && args[0] == "createChatRoom" {
 					if userName != "" {
-						req := &linuxChatAppPb.CreateChatRoomRequest{
-							ChatRoomName: args[1],
-							UserName:     userName,
-							Users:        append([]string{userName}, args[2:]...),
-						}
-						resp, err := client.CreateChatRoom(context.Background(), req)
-						clientChatRoomNames[resp.GetChatRoomName()] = true
-						fmt.Printf("Adding %v to clientChatRoomNames\n", resp.GetChatRoomName())
-						if userName == "" {
-							userName = resp.GetHostUserName()
-						}
-						//create connection with chat service
-						clientLib.InitConnection(client, chatRoomSessions, userName, resp.GetChatRoomName(), done, errChannel)
-						if err != nil {
-							panic(err)
+						if _, ok := clientChatRoomNames[args[1]]; ok {
+							fmt.Printf("Chatroom %v already created.\n", args[1])
+
 						} else {
-							fmt.Println(resp)
+							req := &linuxChatAppPb.CreateChatRoomRequest{
+								ChatRoomName: args[1],
+								UserName:     userName,
+								Users:        append([]string{userName}, args[2:]...),
+							}
+							resp, err := client.CreateChatRoom(context.Background(), req)
+							clientChatRoomNames[resp.GetChatRoomName()] = true
+							fmt.Printf("Adding %v to clientChatRoomNames\n", resp.GetChatRoomName())
+							if userName == "" {
+								userName = resp.GetHostUserName()
+							}
+							//create connection with chat service
+							clientLib.InitConnection(client, chatRoomSessions, userName, resp.GetChatRoomName(), done, errChannel)
+							if err != nil {
+								errChannel <- err
+							} else {
+								fmt.Println(resp)
+							}
 						}
 					} else {
 						fmt.Println("Must Create username")
 					}
 				} else if len(args) == 2 && args[0] == "joinChatRoom" {
 					if userName != "" {
-						req := &linuxChatAppPb.JoinChatRoomRequest{
-							UserName:     userName,
-							ChatRoomName: args[1],
-						}
-						resp, err := client.JoinChatRoom(context.Background(), req)
-						if resp.GetSuccess() {
-							clientChatRoomNames[resp.GetChatRoomName()] = true
-							fmt.Printf("Adding %v to clientChatRoomNames\n", resp.GetChatRoomName())
-						}
-						//create connection with chat service
-						clientLib.InitConnection(client, chatRoomSessions, userName, resp.GetChatRoomName(), done, errChannel)
-						if err != nil {
-							panic(err)
+						if _, ok := clientChatRoomNames[args[1]]; ok {
+							fmt.Printf("Chatroom %v already joined.\n", args[1])
 						} else {
-							fmt.Println(resp)
+							req := &linuxChatAppPb.JoinChatRoomRequest{
+								UserName:     userName,
+								ChatRoomName: args[1],
+							}
+							resp, err := client.JoinChatRoom(context.Background(), req)
+							if resp.GetSuccess() {
+								clientChatRoomNames[resp.GetChatRoomName()] = true
+								fmt.Printf("Adding %v to clientChatRoomNames\n", resp.GetChatRoomName())
+							}
+							//create connection with chat service
+							clientLib.InitConnection(client, chatRoomSessions, userName, resp.GetChatRoomName(), done, errChannel)
+							if err != nil {
+								errChannel <- err
+							} else {
+								fmt.Println(resp)
+							}
 						}
 					} else {
 						fmt.Println("Must Create username")
@@ -177,12 +209,14 @@ func main() {
 							clientChatRoomNames[resp.GetChatRoomName()] = false
 							if _, ok := chatRoomSessions[resp.GetChatRoomName()]; ok {
 								chatRoomSessions[resp.GetChatRoomName()].CloseSend()
+								delete(chatRoomSessions, resp.GetChatRoomName())
+								fmt.Printf("removing %v from chatRoomSessions\n", resp.GetChatRoomName())
 							}
-							delete(chatRoomSessions, resp.GetChatRoomName())
+							delete(clientChatRoomNames, resp.GetChatRoomName())
 							fmt.Printf("removing %v from clientChatRoomNames\n", resp.GetChatRoomName())
 						}
 						if err != nil {
-							panic(err)
+							errChannel <- err
 						} else {
 							fmt.Println(resp)
 						}
@@ -197,6 +231,8 @@ func main() {
 							Message:      strings.Join(args[2:], " "),
 							TimeStamp:    utils.GetTimeStamp(),
 						})
+					} else {
+						fmt.Printf("%v is not in chatRoom %v\n", userName, args[1])
 					}
 				} else if len(args) == 1 && args[0] == "help" {
 					fmt.Printf(RootHelpMessage)

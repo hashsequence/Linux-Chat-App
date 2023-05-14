@@ -6,6 +6,7 @@ import (
 	"time"
 
 	linuxChatAppPb "github.com/hashsequence/Linux-Chat-App/pkg/pb/LinuxChatAppPb"
+	"github.com/hashsequence/Linux-Chat-App/pkg/utils"
 )
 
 const CHATROOM_SIZE = 100
@@ -36,7 +37,7 @@ type DataStore struct {
 	messageQueue chan Message
 	streams      map[string]map[string]linuxChatAppPb.LinuxChatAppService_SendMessageServer
 	ttl          int64
-	done         chan struct{}
+	Done         chan struct{}
 	afk          map[string]bool
 }
 
@@ -66,6 +67,15 @@ func (this *DataStore) AddMessage(stream linuxChatAppPb.LinuxChatAppService_Send
 		this.Unlock()
 	}()
 	delete(this.afk, userName)
+	//check if user is in chatRoom
+	if _, ok := this.chatRooms[chatRoomName]; !ok {
+		fmt.Printf("Chatroom %v does not exist.\n", chatRoomName)
+		return nil
+	}
+	if _, ok := this.chatRooms[chatRoomName].users[userName]; !ok {
+		fmt.Println(userName + " is not in chatRoom " + chatRoomName + ".")
+		return nil
+	}
 	var newMsg *Message
 	if _, ok := this.streams[chatRoomName]; !ok {
 		this.streams[chatRoomName] = map[string]linuxChatAppPb.LinuxChatAppService_SendMessageServer{}
@@ -82,8 +92,30 @@ func (this *DataStore) AddMessage(stream linuxChatAppPb.LinuxChatAppService_Send
 			timeStamp:    timeStamp,
 		}
 		chatRoom.messages = append(chatRoom.messages)
+		this.messageQueue <- *newMsg
 	}
-	this.messageQueue <- *newMsg
+	return newMsg
+}
+
+func (this *DataStore) addMessage(stream linuxChatAppPb.LinuxChatAppService_SendMessageServer, chatRoomName string, userName string, msg string, timeStamp string) *Message {
+	var newMsg *Message
+	if _, ok := this.streams[chatRoomName]; !ok {
+		this.streams[chatRoomName] = map[string]linuxChatAppPb.LinuxChatAppService_SendMessageServer{}
+	}
+	if _, ok := this.streams[chatRoomName][userName]; !ok {
+		this.streams[chatRoomName][userName] = stream
+	}
+	fmt.Printf("%v | %v | %v | %v\n", chatRoomName, userName, msg, timeStamp)
+	if chatRoom, ok := this.chatRooms[chatRoomName]; ok {
+		newMsg = &Message{
+			msg:          msg,
+			chatRoomName: chatRoomName,
+			userName:     userName,
+			timeStamp:    timeStamp,
+		}
+		chatRoom.messages = append(chatRoom.messages)
+		this.messageQueue <- *newMsg
+	}
 	return newMsg
 }
 
@@ -199,22 +231,37 @@ func (this *DataStore) LeaveChatRoom(userName string, chatRoomName string) bool 
 	} else {
 		success = false
 	}
+
+	if _, ok := this.streams[chatRoomName]; ok && success {
+		if _, ok2 := this.streams[chatRoomName][userName]; ok2 {
+			fmt.Printf("Removing user: %v from chatroom: %v\n", userName, chatRoomName)
+			this.addMessage(this.streams[chatRoomName][userName], chatRoomName, userName, userName+" leaving "+chatRoomName+"...", utils.GetTimeStamp())
+			delete(this.streams[chatRoomName], userName)
+		}
+	} else {
+		success = false
+	}
 	//if user's chatRoom is 0 then delete user from users
 	//if len(this.users[userName].chatRooms) < 1 {
 	//	delete(this.users, userName)
 	//}
 	//if chatRoom has 0 users then delete chatRoom
 	if len(this.chatRooms[chatRoomName].users) < 1 {
+		fmt.Printf("Chatroom %v has no more users, deleting chatRoom...\n", chatRoomName)
 		delete(this.chatRooms, chatRoomName)
+		if _, ok := this.streams[chatRoomName]; ok {
+			fmt.Printf("Chatroom %v has no more users, deleting chatRoom streams...\n", chatRoomName)
+			delete(this.streams, chatRoomName)
+		}
 	}
 
 	return success
 }
 
-func (this *DataStore) SendOutMessages(done chan struct{}) {
+func (this *DataStore) SendOutMessages() {
 	for {
 		select {
-		case <-done:
+		case <-this.Done:
 			return
 		case msg := <-this.messageQueue:
 			fmt.Printf("Sending out Message %v\n", msg)
@@ -271,7 +318,7 @@ func (this *DataStore) initRoutines() {
 				for key := range this.users {
 					this.afk[key] = true
 				}
-			case <-this.done:
+			case <-this.Done:
 				fmt.Println("Shutting down routines")
 				ticker.Stop()
 				return
@@ -288,7 +335,7 @@ func NewDataStore(messageQueueSize int, ttl_Sec int64, done chan struct{}) *Data
 		messageQueue: make(chan Message, messageQueueSize),
 		streams:      map[string]map[string]linuxChatAppPb.LinuxChatAppService_SendMessageServer{},
 		ttl:          ttl_Sec,
-		done:         done,
+		Done:         done,
 		afk:          map[string]bool{},
 	}
 	ds.initRoutines()

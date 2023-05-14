@@ -22,7 +22,6 @@ func recieveNewMessages(stream linuxChatAppPb.LinuxChatAppService_SendMessageCli
 
 	res, err := stream.Recv()
 	if err == io.EOF {
-		errChannel <- err
 		return
 	}
 	if err != nil {
@@ -30,7 +29,7 @@ func recieveNewMessages(stream linuxChatAppPb.LinuxChatAppService_SendMessageCli
 		errChannel <- err
 		return
 	}
-	fmt.Println(res.GetChatRoomName() + " | " + res.GetChatRow())
+	fmt.Println("\n" + res.GetChatRoomName() + " | " + res.GetChatRow())
 
 }
 
