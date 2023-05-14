@@ -87,7 +87,7 @@ Simple cli-client and server in-memory chat application implemented in Go and gr
                                                                                           +--------------------------+
 ```
 
-## How does the client and servers are still know they are live
+## How does the client and server know one another are still live?
 
 * the server deletes the user if the user has been afk after 30 minutes or 1800 seconds (time can be configured in [serverMain.go](./cmd/server/serverMain.go) via ttl variable)
 
