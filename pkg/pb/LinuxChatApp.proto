@@ -9,7 +9,6 @@ message CreateUserNameRequest {
 
 message CreateUserNameResponse {
     string userName = 1;
-    bool success = 2;
 }
 
 message DeleteUserRequest {
@@ -66,12 +65,13 @@ message MessageResponse {
 
 message MessageRequest {
     string userName = 1;
-    string otherUserName = 2;
+    string chatRoomName = 2;
     string message = 3;
     string timeStamp = 4;
 }
 
 message ViewListOfUsersRequest {
+    string userName = 1;
 }
 
 message ViewListOfUsersResponse {
@@ -79,6 +79,7 @@ message ViewListOfUsersResponse {
 }
 
 message ViewListOfChatRoomsRequest {
+    string userName = 1;
 }
 
 message ViewListOfChatRoomsResponse {

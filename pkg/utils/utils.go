@@ -19,7 +19,7 @@ func GetArgsArr(s string) []string {
 	arr := []string{}
 	currStr := []byte{}
 	for i := 0; i < len(s); i++ {
-		if s[i] != ' ' {
+		if s[i] == ' ' {
 			arr = append(arr, string(currStr))
 			currStr = []byte{}
 		} else {

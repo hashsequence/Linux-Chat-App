@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 
@@ -19,14 +20,19 @@ type LinuxChatServer struct {
 	dataStore *data.DataStore
 }
 
-func NewLinuxChatServer() *LinuxChatServer {
+func NewLinuxChatServer(messageQueueSize int, ttl_Sec int64, done chan struct{}) *LinuxChatServer {
 	return &LinuxChatServer{
-		dataStore: data.NewDataStore(),
+		dataStore: data.NewDataStore(messageQueueSize, ttl_Sec, done),
 	}
 }
 
 func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) error {
 	// Load the certificates from disk
+	done := make(chan struct{})
+	defer func() {
+		close(done)
+	}()
+
 	certificate, err := tls.LoadX509KeyPair(serverCrt, serverKey)
 	if err != nil {
 		return fmt.Errorf("could not load server key pair: %v", err)
@@ -63,7 +69,8 @@ func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) err
 
 	// Register the handler object
 	linuxChatAppPb.RegisterLinuxChatAppServiceServer(srv, this)
-
+	//run thread to send out messages
+	go this.dataStore.SendOutMessages(done)
 	// Serve and Listen
 	if err := srv.Serve(lis); err != nil {
 		return fmt.Errorf("grpc serve error: %v", err)
@@ -73,17 +80,16 @@ func (this *LinuxChatServer) Serve(caCrt, serverCrt, serverKey, addr string) err
 }
 
 func (this *LinuxChatServer) CreateUser(ctx context.Context, req *linuxChatAppPb.CreateUserNameRequest) (*linuxChatAppPb.CreateUserNameResponse, error) {
-
-	isCreated := this.dataStore.CreateUser(req.GetUserName())
+	fmt.Printf("CreateUser requested for %v\n", req.GetUserName())
+	this.dataStore.CreateUser(req.GetUserName())
 	resp := &linuxChatAppPb.CreateUserNameResponse{
 		UserName: req.GetUserName(),
-		Success:  isCreated,
 	}
 	return resp, nil
 }
 
 func (this *LinuxChatServer) DeleteUser(ctx context.Context, req *linuxChatAppPb.DeleteUserRequest) (*linuxChatAppPb.DeleteUserResponse, error) {
-
+	fmt.Printf("DeleteUser requested for %v\n", req.GetUserName())
 	isDeleted := this.dataStore.DeleteUser(req.GetUserName())
 	resp := &linuxChatAppPb.DeleteUserResponse{
 		UserName: req.GetUserName(),
@@ -93,9 +99,9 @@ func (this *LinuxChatServer) DeleteUser(ctx context.Context, req *linuxChatAppPb
 }
 
 func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxChatAppPb.CreateChatRoomRequest) (*linuxChatAppPb.CreateChatRoomResponse, error) {
-
+	fmt.Printf("CreateChatRoom %v requested for %v\n", req.GetChatRoomName(), req.GetUserName())
 	chatRoom := data.NewChatRoom(req.GetUserName(), req.GetChatRoomName(), req.GetUsers(), false)
-	this.dataStore.AddChatRoom(chatRoom)
+	this.dataStore.AddChatRoom(req.GetUserName(), chatRoom)
 
 	resp := &linuxChatAppPb.CreateChatRoomResponse{
 		HostUserName: req.GetUserName(),
@@ -106,15 +112,18 @@ func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxChatA
 }
 
 func (this *LinuxChatServer) JoinChatRoom(ctx context.Context, req *linuxChatAppPb.JoinChatRoomRequest) (*linuxChatAppPb.JoinChatRoomResponse, error) {
+	fmt.Printf("%v is joining %v\n", req.GetUserName(), req.GetChatRoomName())
 	this.dataStore.AddUser(req.GetUserName(), req.GetChatRoomName())
 	resp := &linuxChatAppPb.JoinChatRoomResponse{
-		Success: true,
+		UserName:     req.GetUserName(),
+		ChatRoomName: req.GetChatRoomName(),
+		Success:      true,
 	}
 	return resp, nil
 }
 
 func (this *LinuxChatServer) LeaveChatRoom(ctx context.Context, req *linuxChatAppPb.LeaveChatRoomRequest) (*linuxChatAppPb.LeaveChatRoomResponse, error) {
-
+	fmt.Printf("%v is leaving %v\n", req.GetUserName(), req.GetChatRoomName())
 	success := this.dataStore.LeaveChatRoom(req.GetUserName(), req.GetChatRoomName())
 	resp := &linuxChatAppPb.LeaveChatRoomResponse{
 		Success: success,
@@ -127,18 +136,37 @@ func (this *LinuxChatServer) LeaveChatRoom(ctx context.Context, req *linuxChatAp
 }
 
 func (this *LinuxChatServer) SendMessage(stream linuxChatAppPb.LinuxChatAppService_SendMessageServer) error {
-	return nil
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+
+		if err != nil {
+			return fmt.Errorf("Error while reading client stream %v\n", err)
+		}
+
+		this.dataStore.AddMessage(stream, req.GetChatRoomName(), req.GetUserName(), req.GetMessage(), req.GetTimeStamp())
+
+		//senderErr := stream.Send(&linuxChatAppPb.MessageResponse{
+		//	ChatRoomName: req.GetChatRoomName(),
+		//	ChatRow:      newMsg.ToString(),
+		//})
+		//if senderErr != nil {
+		//	return fmt.Errorf("Error while sending data to cclient: %v\n", err)
+		//}
+	}
 }
 
 func (this *LinuxChatServer) ViewListOfUsers(ctx context.Context, req *linuxChatAppPb.ViewListOfUsersRequest) (*linuxChatAppPb.ViewListOfUsersResponse, error) {
 	resp := &linuxChatAppPb.ViewListOfUsersResponse{
-		Users: this.dataStore.GetUsers(),
+		Users: this.dataStore.GetUsers(req.GetUserName()),
 	}
 	return resp, nil
 }
 
 func (this *LinuxChatServer) ViewListOfChatRooms(ctx context.Context, req *linuxChatAppPb.ViewListOfChatRoomsRequest) (*linuxChatAppPb.ViewListOfChatRoomsResponse, error) {
-	chatRoomsMap := this.dataStore.GetChatRooms()
+	chatRoomsMap := this.dataStore.GetChatRooms(req.GetUserName())
 	chatRooms := []string{}
 	for key := range chatRoomsMap {
 		chatRooms = append(chatRooms, key)

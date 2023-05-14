@@ -3,3 +3,9 @@ mod:
 
 mod-tidy:
 	go mod tidy
+
+run-server:
+	go run cmd/server/serverMain.go
+
+run-client:
+	go run cmd/client/clientMain.go

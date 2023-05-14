@@ -1,6 +1,12 @@
 package data
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+	"time"
+
+	linuxChatAppPb "github.com/hashsequence/Linux-Chat-App/pkg/pb/LinuxChatAppPb"
+)
 
 const CHATROOM_SIZE = 100
 
@@ -9,33 +15,90 @@ type User struct {
 	chatRooms map[string]*ChatRoom
 }
 
+type Message struct {
+	msg          string
+	chatRoomName string
+	userName     string
+	timeStamp    string
+}
 type ChatRoom struct {
 	chatRoomName string
 	users        map[string]*User
 	private      bool
 	createdBy    string
-	messages     [][]string
+	messages     []Message
 }
 
 type DataStore struct {
 	sync.RWMutex
-	users     map[string]*User
-	chatRooms map[string]*ChatRoom
+	users        map[string]*User
+	chatRooms    map[string]*ChatRoom
+	messageQueue chan Message
+	streams      map[string]map[string]linuxChatAppPb.LinuxChatAppService_SendMessageServer
+	ttl          int64
+	done         chan struct{}
+	afk          map[string]bool
 }
 
-func (this *DataStore) CreateUser(userName string) bool {
+func (this *Message) GetMsg() string {
+	return this.msg
+}
+
+func (this *Message) GetChatRoomName() string {
+	return this.chatRoomName
+}
+
+func (this *Message) GetUserName() string {
+	return this.userName
+}
+
+func (this *Message) GetTimeStamp() string {
+	return this.timeStamp
+}
+
+func (this *Message) ToString() string {
+	return this.userName + " | " + this.msg + " | " + this.timeStamp
+}
+
+func (this *DataStore) AddMessage(stream linuxChatAppPb.LinuxChatAppService_SendMessageServer, chatRoomName string, userName string, msg string, timeStamp string) *Message {
 	this.Lock()
 	defer func() {
 		this.Unlock()
 	}()
+	delete(this.afk, userName)
+	var newMsg *Message
+	if _, ok := this.streams[chatRoomName]; !ok {
+		this.streams[chatRoomName] = map[string]linuxChatAppPb.LinuxChatAppService_SendMessageServer{}
+	}
+	if _, ok := this.streams[chatRoomName][userName]; !ok {
+		this.streams[chatRoomName][userName] = stream
+	}
+	fmt.Printf("%v | %v | %v | %v\n", chatRoomName, userName, msg, timeStamp)
+	if chatRoom, ok := this.chatRooms[chatRoomName]; ok {
+		newMsg = &Message{
+			msg:          msg,
+			chatRoomName: chatRoomName,
+			userName:     userName,
+			timeStamp:    timeStamp,
+		}
+		chatRoom.messages = append(chatRoom.messages)
+	}
+	this.messageQueue <- *newMsg
+	return newMsg
+}
+
+func (this *DataStore) CreateUser(userName string) {
+	this.Lock()
+	defer func() {
+		this.Unlock()
+	}()
+	delete(this.afk, userName)
 	if _, ok := this.users[userName]; !ok {
 		this.users[userName] = &User{
 			userName:  userName,
 			chatRooms: map[string]*ChatRoom{},
 		}
-		return true
 	}
-	return false
 }
 
 func (this *DataStore) DeleteUser(userName string) bool {
@@ -54,11 +117,12 @@ func (this *DataStore) DeleteUser(userName string) bool {
 	return false
 }
 
-func (this *DataStore) GetUsers() []string {
+func (this *DataStore) GetUsers(clientUserName string) []string {
 	this.RLock()
 	defer func() {
 		this.RUnlock()
 	}()
+	delete(this.afk, clientUserName)
 	usersArr := make([]string, len(this.users))
 	i := 0
 	for _, val := range this.users {
@@ -68,19 +132,21 @@ func (this *DataStore) GetUsers() []string {
 	return usersArr
 }
 
-func (this *DataStore) GetChatRooms() map[string]*ChatRoom {
+func (this *DataStore) GetChatRooms(clientUserName string) map[string]*ChatRoom {
 	this.RLock()
 	defer func() {
 		this.RUnlock()
 	}()
+	delete(this.afk, clientUserName)
 	return this.chatRooms
 }
 
-func (this *DataStore) AddChatRoom(chatRoom *ChatRoom) {
+func (this *DataStore) AddChatRoom(clientUserName string, chatRoom *ChatRoom) {
 	this.Lock()
 	defer func() {
 		this.Unlock()
 	}()
+	delete(this.afk, clientUserName)
 	if len(this.chatRooms) < CHATROOM_SIZE {
 		if _, ok := this.chatRooms[chatRoom.chatRoomName]; !ok {
 			this.chatRooms[chatRoom.chatRoomName] = chatRoom
@@ -93,6 +159,7 @@ func (this *DataStore) AddUser(userName string, chatRoomName string) {
 	defer func() {
 		this.Unlock()
 	}()
+	delete(this.afk, userName)
 	//if chatroom does not exist then create it
 	if _, ok := this.chatRooms[chatRoomName]; !ok {
 		this.chatRooms[chatRoomName] = NewChatRoom(userName, chatRoomName, []string{userName}, false)
@@ -118,6 +185,7 @@ func (this *DataStore) LeaveChatRoom(userName string, chatRoomName string) bool 
 	defer func() {
 		this.Unlock()
 	}()
+	delete(this.afk, userName)
 	success := true
 	//if user exist then delete user's chatroom for chatRoomName
 	if _, ok := this.users[userName]; ok {
@@ -143,6 +211,26 @@ func (this *DataStore) LeaveChatRoom(userName string, chatRoomName string) bool 
 	return success
 }
 
+func (this *DataStore) SendOutMessages(done chan struct{}) {
+	for {
+		select {
+		case <-done:
+			return
+		case msg := <-this.messageQueue:
+			fmt.Printf("Sending out Message %v\n", msg)
+			for userName, stream := range this.streams[msg.GetChatRoomName()] {
+				//send out messages to Chatroom if msg does not belong to sender
+				if userName != msg.userName {
+					stream.Send(&linuxChatAppPb.MessageResponse{
+						ChatRoomName: msg.GetChatRoomName(),
+						ChatRow:      msg.ToString(),
+					})
+				}
+			}
+		}
+	}
+}
+
 func NewUser(userName string) *User {
 	return &User{
 		userName: userName,
@@ -156,7 +244,7 @@ func NewChatRoom(userName string, chatRoomName string, users []string, private b
 		users:        userMap,
 		private:      private,
 		createdBy:    userName,
-		messages:     [][]string{},
+		messages:     []Message{},
 	}
 	for _, val := range users {
 		userMap[val] = &User{val, map[string]*ChatRoom{
@@ -166,10 +254,43 @@ func NewChatRoom(userName string, chatRoomName string, users []string, private b
 	}
 	return nChatRoom
 }
+func (this *DataStore) initRoutines() {
+	fmt.Println("datastore initRoutines...")
+	ticker := time.NewTicker(time.Duration(this.ttl) * time.Second)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				// delete users if ttl expires
+				for key := range this.afk {
+					fmt.Printf("Deleting user %v since user has been afk for: %v\n", key, this.ttl)
+					this.DeleteUser(key)
+					delete(this.afk, key)
+				}
+				//add users to new cycle
+				for key := range this.users {
+					this.afk[key] = true
+				}
+			case <-this.done:
+				fmt.Println("Shutting down routines")
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+}
 
-func NewDataStore() *DataStore {
-	return &DataStore{
-		users:     map[string]*User{},
-		chatRooms: map[string]*ChatRoom{},
+func NewDataStore(messageQueueSize int, ttl_Sec int64, done chan struct{}) *DataStore {
+
+	ds := &DataStore{
+		users:        map[string]*User{},
+		chatRooms:    map[string]*ChatRoom{},
+		messageQueue: make(chan Message, messageQueueSize),
+		streams:      map[string]map[string]linuxChatAppPb.LinuxChatAppService_SendMessageServer{},
+		ttl:          ttl_Sec,
+		done:         done,
+		afk:          map[string]bool{},
 	}
+	ds.initRoutines()
+	return ds
 }
