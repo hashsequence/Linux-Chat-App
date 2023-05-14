@@ -87,6 +87,41 @@ cli-client and server chat application implemented in Go
                                                                                           +--------------------------+
 ```
 
+## Usage
+
+### Server
+
+* to run server, run the following command in root dir of project:
+```
+make run-server
+```
+
+### client
+
+* to run client, run the following command in root dir of project:
+```
+make run-client
+```
+
+* help command:
+
+```
+avwong13@LAPTOP-4RKP2MI8:~/Linux-Chat-App$ make run-client
+go run cmd/client/clientMain.go
+please Create UserName:
+u1
+Attempting to create user: u1
+Username: u1 created successfully!
+u1: help
+
+Commands:
+viewChatRooms: get a list of available chatRooms
+viewUsers: get a list of users logged into server
+createChatRoom: create chatroom
+joinChatRoom: join chatrooom
+leaveChatRoom: leave chatRoom
+send: send message to chat service
+```
 ## Sample Run
 
 ![sampleRun](./sampleRun.gif)

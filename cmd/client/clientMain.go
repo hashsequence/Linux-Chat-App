@@ -60,7 +60,6 @@ func main() {
 		}
 		cleanUp()
 	}()
-	defer cleanUp()
 	if !userNameCreated {
 		fmt.Println("please Create UserName:")
 	}
@@ -85,7 +84,6 @@ func main() {
 			default:
 				args := utils.GetArgsArr(cmd)
 				if len(args) == 1 && args[0] == "d" {
-					close(done)
 					return
 				} else if !userNameCreated {
 					fmt.Printf("Attempting to create user: %v\n", args[0])
