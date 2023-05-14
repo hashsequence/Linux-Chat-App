@@ -91,7 +91,7 @@ Simple cli-client and server in-memory chat application implemented in Go and gr
 
 * the server deletes the user if the user has been afk after 30 minutes (time can be configured in [serverMain.go](./cmd/server/serverMain.go))
 
-* if the client has no open chatrooms, then the client will start pinging the server every 5 minutes(* the server deletes the user if the user has been afk after 30 minutes (time can be configured in [clientMain.go](./cmd/client/clientMain.go)))
+* if the client has no open chatrooms, then the client will start pinging the server every 5 minutes(time can be configured in [clientMain.go](./cmd/client/clientMain.go))
 
 ## Usage
 
