@@ -2,7 +2,7 @@
 
 ## Summary
 
-cli-client and server chat application implemented in Go
+Simple cli-client and server in-memory chat application implemented in Go and grpc.
 
 ## Design Document
 
