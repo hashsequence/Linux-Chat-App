@@ -141,7 +141,8 @@ func (this *DataStore) DeleteUser(userName string) bool {
 	if user, ok := this.users[userName]; ok {
 		chatRooms := user.chatRooms
 		for key := range chatRooms {
-			delete(chatRooms[key].users, userName)
+			fmt.Printf("force %v to leave %v.\n", userName, key)
+			this.leaveChatRoom(userName, key)
 		}
 		delete(this.users, userName)
 		return true
@@ -193,7 +194,12 @@ func (this *DataStore) AddUser(userName string, chatRoomName string) {
 	}()
 	delete(this.afk, userName)
 	//if chatroom does not exist then create it
+
 	if _, ok := this.chatRooms[chatRoomName]; !ok {
+		if len(this.chatRooms) >= CHATROOM_SIZE {
+			fmt.Printf("max number of chatrooms has reached max capacity at %v.\n", CHATROOM_SIZE)
+			return
+		}
 		this.chatRooms[chatRoomName] = NewChatRoom(userName, chatRoomName, []string{userName}, false)
 	}
 	//if username does not exist create user and set chatRooms of user to the chatRoom and set chatRoom to contain the user
@@ -212,6 +218,49 @@ func (this *DataStore) AddUser(userName string, chatRoomName string) {
 	}
 }
 
+func (this *DataStore) leaveChatRoom(userName string, chatRoomName string) bool {
+	success := true
+	//if user exist then delete user's chatroom for chatRoomName
+	if _, ok := this.users[userName]; ok {
+		fmt.Printf("Deleting %v from %v's ChatRooms.\n", chatRoomName, userName)
+		delete(this.users[userName].chatRooms, chatRoomName)
+	} else {
+		success = false
+	}
+	//if user exists and chatRoom exists then delete chatroom's user pointing to userName
+	if _, ok := this.chatRooms[chatRoomName]; ok && success {
+		fmt.Printf("Deleting %v from chatRoom %v.\n", userName, chatRoomName)
+		delete(this.chatRooms[chatRoomName].users, userName)
+	} else {
+		success = false
+	}
+
+	if _, ok := this.streams[chatRoomName]; ok && success {
+		if _, ok2 := this.streams[chatRoomName][userName]; ok2 {
+			fmt.Printf("Removing user: %v from chatroom: %v\n", userName, chatRoomName)
+			this.addMessage(this.streams[chatRoomName][userName], chatRoomName, userName, userName+" leaving "+chatRoomName+"...", utils.GetTimeStamp())
+			delete(this.streams[chatRoomName], userName)
+		}
+	} else {
+		success = false
+	}
+	//if user's chatRoom is 0 then delete user from users
+	//if len(this.users[userName].chatRooms) < 1 {
+	//	delete(this.users, userName)
+	//}
+	//if chatRoom has 0 users then delete chatRoom
+	if len(this.chatRooms[chatRoomName].users) < 1 {
+		fmt.Printf("Chatroom %v has no more users, deleting chatRoom...\n", chatRoomName)
+		delete(this.chatRooms, chatRoomName)
+		if _, ok := this.streams[chatRoomName]; ok {
+			fmt.Printf("Chatroom %v has no more users, deleting chatRoom streams...\n", chatRoomName)
+			delete(this.streams, chatRoomName)
+		}
+	}
+
+	return success
+}
+
 func (this *DataStore) LeaveChatRoom(userName string, chatRoomName string) bool {
 	this.Lock()
 	defer func() {
@@ -221,12 +270,14 @@ func (this *DataStore) LeaveChatRoom(userName string, chatRoomName string) bool 
 	success := true
 	//if user exist then delete user's chatroom for chatRoomName
 	if _, ok := this.users[userName]; ok {
+		fmt.Printf("Deleting %v from %v's ChatRooms.\n", chatRoomName, userName)
 		delete(this.users[userName].chatRooms, chatRoomName)
 	} else {
 		success = false
 	}
 	//if user exists and chatRoom exists then delete chatroom's user pointing to userName
 	if _, ok := this.chatRooms[chatRoomName]; ok && success {
+		fmt.Printf("Deleting %v from chatRoom %v.\n", userName, chatRoomName)
 		delete(this.chatRooms[chatRoomName].users, userName)
 	} else {
 		success = false
@@ -278,6 +329,17 @@ func (this *DataStore) SendOutMessages() {
 	}
 }
 
+func (this *DataStore) UserExists(userName string) bool {
+	this.RLock()
+	defer func() {
+		this.RUnlock()
+	}()
+	if _, ok := this.users[userName]; ok {
+		return true
+	}
+	return false
+}
+
 func NewUser(userName string) *User {
 	return &User{
 		userName: userName,
@@ -310,7 +372,7 @@ func (this *DataStore) initRoutines() {
 			case <-ticker.C:
 				// delete users if ttl expires
 				for key := range this.afk {
-					fmt.Printf("Deleting user %v since user has been afk for: %v\n", key, this.ttl)
+					fmt.Printf("Deleting user %v since user has been afk for %v seconds\n", key, this.ttl)
 					this.DeleteUser(key)
 					delete(this.afk, key)
 				}

@@ -8,21 +8,25 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"strconv"
 
 	"github.com/hashsequence/Linux-Chat-App/pkg/data"
 	linuxChatAppPb "github.com/hashsequence/Linux-Chat-App/pkg/pb/LinuxChatAppPb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 type LinuxChatServer struct {
 	linuxChatAppPb.UnimplementedLinuxChatAppServiceServer
 	dataStore *data.DataStore
+	ttl       int64
 }
 
 func NewLinuxChatServer(messageQueueSize int, ttl_Sec int64, done chan struct{}) *LinuxChatServer {
 	return &LinuxChatServer{
 		dataStore: data.NewDataStore(messageQueueSize, ttl_Sec, done),
+		ttl:       ttl_Sec,
 	}
 }
 
@@ -99,9 +103,7 @@ func (this *LinuxChatServer) DeleteUser(ctx context.Context, req *linuxChatAppPb
 
 func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxChatAppPb.CreateChatRoomRequest) (*linuxChatAppPb.CreateChatRoomResponse, error) {
 	fmt.Printf("CreateChatRoom %v requested for %v\n", req.GetChatRoomName(), req.GetUserName())
-	chatRoom := data.NewChatRoom(req.GetUserName(), req.GetChatRoomName(), req.GetUsers(), false)
-	this.dataStore.AddChatRoom(req.GetUserName(), chatRoom)
-
+	this.dataStore.AddUser(req.GetUserName(), req.GetChatRoomName())
 	resp := &linuxChatAppPb.CreateChatRoomResponse{
 		HostUserName: req.GetUserName(),
 		ChatRoomName: req.GetChatRoomName(),
@@ -179,6 +181,11 @@ func (this *LinuxChatServer) ViewListOfChatRooms(ctx context.Context, req *linux
 }
 
 func (this *LinuxChatServer) Ping(ctx context.Context, req *linuxChatAppPb.PingRequest) (*linuxChatAppPb.PingResponse, error) {
-	resp := &linuxChatAppPb.PingResponse{}
-	return resp, nil
+	userName := req.GetUserName()
+	if userName != "" {
+		if !this.dataStore.UserExists(userName) {
+			return &linuxChatAppPb.PingResponse{}, status.Error(5, "user "+userName+" does not exist or has been deleted due to being afk for more than "+strconv.FormatInt(this.ttl, 10)+" seconds")
+		}
+	}
+	return &linuxChatAppPb.PingResponse{}, nil
 }

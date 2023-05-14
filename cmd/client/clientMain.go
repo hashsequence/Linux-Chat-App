@@ -83,7 +83,9 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				_, err := client.Ping(context.Background(), &linuxChatAppPb.PingRequest{})
+				_, err := client.Ping(context.Background(), &linuxChatAppPb.PingRequest{
+					UserName: userName,
+				})
 				if err != nil {
 					fmt.Println("\nPing request failed")
 					errChannel <- err

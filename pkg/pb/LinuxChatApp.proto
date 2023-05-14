@@ -87,7 +87,7 @@ message ViewListOfChatRoomsResponse {
 }
 
 message PingRequest {
-
+    string userName = 1;
 }
 
 message PingResponse {
