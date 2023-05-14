@@ -66,6 +66,10 @@ func (this *DataStore) AddMessage(stream linuxChatAppPb.LinuxChatAppService_Send
 	defer func() {
 		this.Unlock()
 	}()
+	if _, ok := this.users[userName]; !ok {
+		fmt.Printf("%v does not exist\n", userName)
+		return nil
+	}
 	delete(this.afk, userName)
 	//check if user is in chatRoom
 	if _, ok := this.chatRooms[chatRoomName]; !ok {
@@ -138,6 +142,19 @@ func (this *DataStore) DeleteUser(userName string) bool {
 	defer func() {
 		this.Unlock()
 	}()
+	if user, ok := this.users[userName]; ok {
+		chatRooms := user.chatRooms
+		for key := range chatRooms {
+			fmt.Printf("force %v to leave %v.\n", userName, key)
+			this.leaveChatRoom(userName, key)
+		}
+		delete(this.users, userName)
+		return true
+	}
+	return false
+}
+
+func (this *DataStore) deleteUser(userName string) bool {
 	if user, ok := this.users[userName]; ok {
 		chatRooms := user.chatRooms
 		for key := range chatRooms {
@@ -363,23 +380,32 @@ func NewChatRoom(userName string, chatRoomName string, users []string, private b
 	}
 	return nChatRoom
 }
+
+func (this *DataStore) refreshAfkList() {
+	this.Lock()
+	defer func() {
+		this.Unlock()
+	}()
+	for key := range this.afk {
+		fmt.Printf("Deleting user %v since user has been afk for %v seconds\n", key, this.ttl)
+		this.deleteUser(key)
+		delete(this.afk, key)
+	}
+	//add users to new cycle
+	for key := range this.users {
+		this.afk[key] = true
+	}
+}
+
 func (this *DataStore) initRoutines() {
 	fmt.Println("datastore initRoutines...")
 	ticker := time.NewTicker(time.Duration(this.ttl) * time.Second)
 	go func() {
+
 		for {
 			select {
 			case <-ticker.C:
-				// delete users if ttl expires
-				for key := range this.afk {
-					fmt.Printf("Deleting user %v since user has been afk for %v seconds\n", key, this.ttl)
-					this.DeleteUser(key)
-					delete(this.afk, key)
-				}
-				//add users to new cycle
-				for key := range this.users {
-					this.afk[key] = true
-				}
+				this.refreshAfkList()
 			case <-this.Done:
 				fmt.Println("Shutting down routines")
 				ticker.Stop()

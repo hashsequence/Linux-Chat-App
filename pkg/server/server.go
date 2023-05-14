@@ -103,6 +103,9 @@ func (this *LinuxChatServer) DeleteUser(ctx context.Context, req *linuxChatAppPb
 
 func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxChatAppPb.CreateChatRoomRequest) (*linuxChatAppPb.CreateChatRoomResponse, error) {
 	fmt.Printf("CreateChatRoom %v requested for %v\n", req.GetChatRoomName(), req.GetUserName())
+	if !this.dataStore.UserExists(req.GetUserName()) {
+		return nil, status.Error(5, "user "+req.GetUserName()+" does not exist or has been deleted due to being afk for more than "+strconv.FormatInt(this.ttl, 10)+" seconds")
+	}
 	this.dataStore.AddUser(req.GetUserName(), req.GetChatRoomName())
 	resp := &linuxChatAppPb.CreateChatRoomResponse{
 		HostUserName: req.GetUserName(),
@@ -114,6 +117,9 @@ func (this *LinuxChatServer) CreateChatRoom(ctx context.Context, req *linuxChatA
 
 func (this *LinuxChatServer) JoinChatRoom(ctx context.Context, req *linuxChatAppPb.JoinChatRoomRequest) (*linuxChatAppPb.JoinChatRoomResponse, error) {
 	fmt.Printf("%v is joining %v\n", req.GetUserName(), req.GetChatRoomName())
+	if !this.dataStore.UserExists(req.GetUserName()) {
+		return nil, status.Error(5, "user "+req.GetUserName()+" does not exist or has been deleted due to being afk for more than "+strconv.FormatInt(this.ttl, 10)+" seconds")
+	}
 	this.dataStore.AddUser(req.GetUserName(), req.GetChatRoomName())
 	resp := &linuxChatAppPb.JoinChatRoomResponse{
 		UserName:     req.GetUserName(),
@@ -125,6 +131,9 @@ func (this *LinuxChatServer) JoinChatRoom(ctx context.Context, req *linuxChatApp
 
 func (this *LinuxChatServer) LeaveChatRoom(ctx context.Context, req *linuxChatAppPb.LeaveChatRoomRequest) (*linuxChatAppPb.LeaveChatRoomResponse, error) {
 	fmt.Printf("%v is leaving %v\n", req.GetUserName(), req.GetChatRoomName())
+	if !this.dataStore.UserExists(req.GetUserName()) {
+		return nil, status.Error(5, "user "+req.GetUserName()+" does not exist or has been deleted due to being afk for more than "+strconv.FormatInt(this.ttl, 10)+" seconds")
+	}
 	success := this.dataStore.LeaveChatRoom(req.GetUserName(), req.GetChatRoomName())
 	resp := &linuxChatAppPb.LeaveChatRoomResponse{
 		UserName:     req.GetUserName(),
@@ -140,7 +149,11 @@ func (this *LinuxChatServer) LeaveChatRoom(ctx context.Context, req *linuxChatAp
 
 func (this *LinuxChatServer) SendMessage(stream linuxChatAppPb.LinuxChatAppService_SendMessageServer) error {
 	for {
+
 		req, err := stream.Recv()
+		if !this.dataStore.UserExists(req.GetUserName()) {
+			return status.Error(5, "user "+req.GetUserName()+" does not exist or has been deleted due to being afk for more than "+strconv.FormatInt(this.ttl, 10)+" seconds")
+		}
 		if err == io.EOF {
 			return nil
 		}
@@ -149,7 +162,7 @@ func (this *LinuxChatServer) SendMessage(stream linuxChatAppPb.LinuxChatAppServi
 			return fmt.Errorf("Error while reading client stream %v\n", err)
 		}
 
-		this.dataStore.AddMessage(stream, req.GetChatRoomName(), req.GetUserName(), req.GetMessage(), req.GetTimeStamp())
+		go this.dataStore.AddMessage(stream, req.GetChatRoomName(), req.GetUserName(), req.GetMessage(), req.GetTimeStamp())
 
 		//senderErr := stream.Send(&linuxChatAppPb.MessageResponse{
 		//	ChatRoomName: req.GetChatRoomName(),
@@ -162,6 +175,9 @@ func (this *LinuxChatServer) SendMessage(stream linuxChatAppPb.LinuxChatAppServi
 }
 
 func (this *LinuxChatServer) ViewListOfUsers(ctx context.Context, req *linuxChatAppPb.ViewListOfUsersRequest) (*linuxChatAppPb.ViewListOfUsersResponse, error) {
+	if !this.dataStore.UserExists(req.GetUserName()) {
+		return nil, status.Error(5, "user "+req.GetUserName()+" does not exist or has been deleted due to being afk for more than "+strconv.FormatInt(this.ttl, 10)+" seconds")
+	}
 	resp := &linuxChatAppPb.ViewListOfUsersResponse{
 		Users: this.dataStore.GetUsers(req.GetUserName()),
 	}
@@ -169,6 +185,9 @@ func (this *LinuxChatServer) ViewListOfUsers(ctx context.Context, req *linuxChat
 }
 
 func (this *LinuxChatServer) ViewListOfChatRooms(ctx context.Context, req *linuxChatAppPb.ViewListOfChatRoomsRequest) (*linuxChatAppPb.ViewListOfChatRoomsResponse, error) {
+	if !this.dataStore.UserExists(req.GetUserName()) {
+		return nil, status.Error(5, "user "+req.GetUserName()+" does not exist or has been deleted due to being afk for more than "+strconv.FormatInt(this.ttl, 10)+" seconds")
+	}
 	chatRoomsMap := this.dataStore.GetChatRooms(req.GetUserName())
 	chatRooms := []string{}
 	for key := range chatRoomsMap {
